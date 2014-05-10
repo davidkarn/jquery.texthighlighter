@@ -422,9 +422,7 @@
             return JSON.stringify(hlDescriptors);
         },
 
-        /**
-         * Deserializes highlights from stringified JSON given as parameter.
-         */
+
         deserializeHighlights: function(json) {
             try {
                 var hlDescriptors = JSON.parse(json);
@@ -432,7 +430,27 @@
                 throw "Can't parse serialized highlights: " + e;
             }
             var highlights = [];
+	    var groupedHighlights = [];
+	    var lastPath = [0, 0];
+	    var currentPath = [0, 0];
             var self = this;
+
+	    function toI(s) {
+		return Number.parseInt(s); }
+
+	    function arePathsConsecutive(last, current) {
+		var len = Math.min(last.length, current.length);
+		var i = 0;
+		
+		while (i < len - 1) {
+		    if (toI(last[i]) != toI(current[i])) {
+			return false; }
+		    i++; }
+
+		if (toI(last[i]) == (toI(current[i]) - 1))
+		    return true;
+
+		return false; }
 
             var deserializationFn = function (hlDescriptor) {
                 var wrapper = hlDescriptor[0];
@@ -465,6 +483,17 @@
                 }
 
                 var highlight = $(hlNode).wrap(wrapper).parent().get(0);
+
+		currentPath = hlDescriptor[2].split(':');
+		var arec = arePathsConsecutive(lastPath, currentPath);
+		if (!arec) {
+		    groupedHighlights.push([]); }
+		
+		console.log({arec: arec, currentPath: currentPath, lastPath: lastPath});
+
+		groupedHighlights[groupedHighlights.length - 1].push(highlight);
+		lastPath = currentPath;
+
                 highlights.push(highlight);
             };
 
@@ -478,7 +507,7 @@
                 }
             });
 
-            return highlights;
+            return groupedHighlights;
         }
 
     };
